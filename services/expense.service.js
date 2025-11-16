@@ -2,12 +2,12 @@ const { isValidObjectId } = require("mongoose");
 const expenseModel = require("../models/expense.model");
 
 const getAllExpenses = async (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
-    limit > 10 ? (limit = 10) : limit;
-    const expenses = await expenseModel
-      .find()
-      .skip((page - 1) * limit)
-      .limit(limit);
+  let { page = 1, limit = 10 } = req.query;
+  limit > 10 ? (limit = 10) : limit;
+  const expenses = await expenseModel
+    .find()
+    .skip((page - 1) * limit)
+    .limit(limit);
   res.status(200).json(expenses);
 };
 
@@ -16,12 +16,10 @@ const getExpenseById = async (req, res) => {
   if (!isValidObjectId(id)) {
     return res.status(400).json("invalid id");
   }
-
   const foundExpense = await expenseModel.findById(id);
   if (!foundExpense) {
     return res.status(400).json("expense not found");
   }
-
   if (foundExpense.user.toString() !== req.userId) {
     return res.status(403).json("Forbidden");
   }
@@ -40,6 +38,7 @@ const createExpense = async (req, res) => {
     category,
     user: req.userId,
   });
+
   res.status(200).json({ message: "expense created", data: newExpense });
 };
 
@@ -55,19 +54,22 @@ const updateExpense = async (req, res) => {
     amount,
     category,
   });
-  if (!updated) {
-    return res.status(400).json("expense not found");
-  }
 
   if (updated.user.toString() !== req.userId) {
     return res.status(403).json("Forbidden");
+  }
+
+  if (!updated) {
+    return res.status(400).json("expense not found");
   }
 
   updated.title = title ?? updated.title;
   updated.amount = amount ?? updated.amount;
   updated.category = category ?? updated.category;
 
-  res.status(200).json({ message: "expense updated", data: updated });
+  res
+    .status(200)
+    .json({ message: "expense updated", data: updated, new: true });
 };
 
 const deleteExpense = async (req, res) => {

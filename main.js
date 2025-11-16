@@ -10,9 +10,9 @@ const PORT = 3030
 app.use(express.json())
 connectMongo()
 
-app.use("/users", userRouter)
+app.use("/users", isAuth, userRouter)
 app.use("/expenses", isAuth, expenseRouter)
-app.use(authRouter)
+app.use("/auth", authRouter)
 
 
 app.get("/", async (req, res) => {

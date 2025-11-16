@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken')
 
 function getToken(headers) {
     const authHeaders = headers['authorization']
-
+    if (!authHeaders) return null;
     const parts = authHeaders.split(" ")
     const [type, token] = parts;
     return type.toLowerCase() === 'bearer' ? token : null;
