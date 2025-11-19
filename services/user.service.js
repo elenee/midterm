@@ -8,7 +8,8 @@ const getAllUsers = async (req, res) => {
     .find()
     .skip((page - 1) * limit)
     .limit(limit)
-    .select("-password");
+    .select("-password")
+    .populate("expense");
 
   res.status(200).json(users);
 };
@@ -18,7 +19,6 @@ const getUserById = async (req, res) => {
   if (!isValidObjectId(id)) {
     return res.status(400).json("invalid id");
   }
-
   const foundUser = await userModel.findById(id).select("-password");
   if (!foundUser) {
     return res.status(400).json("user not found");
@@ -38,6 +38,10 @@ const updateUser = async (req, res) => {
     return res.status(400).json("invalid id");
   }
 
+  if(req.userId !== id) {
+    return res.status(403).json('forbiiden')
+  }
+  
   const updated = await userModel.findByIdAndUpdate(id, {
     username,
     email,
@@ -45,10 +49,6 @@ const updateUser = async (req, res) => {
 
   if (!updated) {
     return res.status(400).json("user not found");
-  }
-
-  if(req.userId !== id) {
-    return res.status(403).json('forbiiden')
   }
 
   res.status(200).json({ message: "User updated", data: updated });
@@ -65,7 +65,7 @@ const deleteUser = async (req, res) => {
     return res.status(400).json("user not found");
   }
 
-  res.status(200).json({ message: "User updated", data: deleted });
+  res.status(200).json({ message: "User deleted", data: deleted });
 };
 
 module.exports = { getAllUsers, getUserById, updateUser, deleteUser };

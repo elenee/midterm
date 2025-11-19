@@ -6,7 +6,6 @@ function getToken(headers) {
     const parts = authHeaders.split(" ")
     const [type, token] = parts;
     return type.toLowerCase() === 'bearer' ? token : null;
-
 }
 
 async function isAuth(req, res, next) {

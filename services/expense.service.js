@@ -1,5 +1,6 @@
 const { isValidObjectId } = require("mongoose");
 const expenseModel = require("../models/expense.model");
+const userModel = require("../models/user.model");
 
 const getAllExpenses = async (req, res) => {
   let { page = 1, limit = 10 } = req.query;
@@ -7,7 +8,8 @@ const getAllExpenses = async (req, res) => {
   const expenses = await expenseModel
     .find()
     .skip((page - 1) * limit)
-    .limit(limit);
+    .limit(limit)
+    .populate("user", "-password");
   res.status(200).json(expenses);
 };
 
@@ -39,6 +41,9 @@ const createExpense = async (req, res) => {
     user: req.userId,
   });
 
+  await userModel.findByIdAndUpdate(req.userId, {
+    $push: { expense: newExpense._id },
+  });
   res.status(200).json({ message: "expense created", data: newExpense });
 };
 
@@ -48,20 +53,19 @@ const updateExpense = async (req, res) => {
   if (!isValidObjectId(id)) {
     return res.status(400).json("invalid id");
   }
+  const expense = await expenseModel.findById(id);
+  if (!expense) {
+    return res.status(400).json("expense not found");
+  }
+  if (expense.user.toString() !== req.userId) {
+    return res.status(403).json("Forbidden");
+  }
 
   const updated = await expenseModel.findByIdAndUpdate(id, {
     title,
     amount,
     category,
   });
-
-  if (updated.user.toString() !== req.userId) {
-    return res.status(403).json("Forbidden");
-  }
-
-  if (!updated) {
-    return res.status(400).json("expense not found");
-  }
 
   updated.title = title ?? updated.title;
   updated.amount = amount ?? updated.amount;
@@ -77,16 +81,14 @@ const deleteExpense = async (req, res) => {
   if (!isValidObjectId(id)) {
     return res.status(400).json("invalid id");
   }
-
-  const deleted = await expenseModel.findByIdAndDelete(id);
-
-  if (!deleted) {
+  const expense = await expenseModel.findById(id);
+  if (!expense) {
     return res.status(400).json("expense not found");
   }
-
-  if (deleted.user.toString() !== req.userId) {
+  if (expense.user.toString() !== req.userId) {
     return res.status(403).json("Forbidden");
   }
+  const deleted = await expenseModel.findByIdAndDelete(id);
 
   res.status(200).json({ message: "expense deleted", data: deleted });
 };
